@@ -17,7 +17,7 @@ def login():
         return jsonify({"msg": "Missing password"}), 400
     
     try:
-        user = User.objects.get(email=email)
+        user = User.objects.get(email__iexact=email)
     except DoesNotExist:
         return jsonify({"msg": "Bad email"}), 401
     except MultipleObjectsReturned:
