@@ -1,7 +1,4 @@
-import os
-import datetime
-
-from flask import Flask
+from flask import Flask, current_app
 from mongoengine import connect
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import JWTManager
@@ -9,25 +6,23 @@ from dotenv import load_dotenv
 
 flask_bcrypt = Bcrypt()
 jwt = JWTManager()
+gcreds = None
 
 load_dotenv()
 
 
-def create_app():
+def create_app(config_object="config.DevelopmentConfig"):
     app = Flask(__name__)
+    app.config.from_object(config_object)
 
-    app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "temporary key")
+    with app.app_context():
+        connect(
+            db=current_app.config['MONGO_DB'],
+            host=current_app.config['MONGO_HOST'],
+            port=current_app.config['MONGO_PORT'],
+        )
 
-    app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "temporary key")
-    app.config["JWT_ACCESS_TOKEN_EXPIRES"] = datetime.timedelta(hours=1)
-
-    connect(
-        db=os.getenv("MONGO_DB", "my_database"),
-        host=os.getenv("MONGO_HOST", "localhost"),
-        port=int(os.getenv("MONGO_PORT", 27017)),
-    )
-
-    flask_bcrypt.init_app(app)
-    jwt.init_app(app)
+        flask_bcrypt.init_app(app)
+        jwt.init_app(app)
 
     return app
