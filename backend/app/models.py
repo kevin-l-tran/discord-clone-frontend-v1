@@ -19,7 +19,7 @@ class User(Document):
     meta = {
         "indexes": [
             {
-                "fields": ["username"],
+                "fields": ["name"],
                 "unique": True,
                 "collation": {"locale": "en", "strength": 2},
             },
