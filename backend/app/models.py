@@ -4,7 +4,7 @@ from . import flask_bcrypt
 
 
 class User(Document):
-    name = StringField(required=True, unique=True, min_length=4)
+    username = StringField(required=True, unique=True, min_length=4)
     email = EmailField(required=True, unique=True)
     password_hash = StringField(required=True, min_length=60)
 
@@ -19,7 +19,7 @@ class User(Document):
     meta = {
         "indexes": [
             {
-                "fields": ["name"],
+                "fields": ["username"],
                 "unique": True,
                 "collation": {"locale": "en", "strength": 2},
             },
