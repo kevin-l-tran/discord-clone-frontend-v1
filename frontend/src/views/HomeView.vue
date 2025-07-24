@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import AuthModal from '@/components/AuthModal.vue'
+
+
 </script>
 
 <template>
   <div
-    class="h-screen w-full flex flex-col justify-center items-center bg-center bg-cover text-center text-white bg-gray-800 bg-[url(../assets/background.jpg)]">
+    class="h-screen w-full flex flex-col justify-center items-center bg-center bg-cover text-center text-white bg-gray-800 bg-[url(../assets/background.avif)]">
     <!-- logo -->
     <div class="mb-6">
       <svg class="w-12 h-12" viewBox="0 0 24 24"><!-- … --></svg>
