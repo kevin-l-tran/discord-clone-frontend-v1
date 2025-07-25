@@ -1,3 +1,5 @@
+import certifi
+
 from flask import Flask, current_app
 from mongoengine import connect, disconnect, get_connection
 from pymongo.errors import ServerSelectionTimeoutError, ConfigurationError
@@ -23,6 +25,8 @@ def create_app(config_object="config.DevelopmentConfig"):
                 host=current_app.config['MONGO_HOST'],
                 port=current_app.config['MONGO_PORT'],
                 serverSelectionTimeoutMS=5000,
+                tls=True,
+                tlsCAFile=certifi.where(),
             )
             client = get_connection()
             client.admin.command('ping')
