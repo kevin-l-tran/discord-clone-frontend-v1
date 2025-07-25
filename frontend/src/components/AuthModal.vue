@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import SignInForm from './Auth/SignInForm.vue'
+import SignUpForm from './Auth/SignUpForm.vue'
 import { ref, defineEmits } from 'vue'
 
 const emit = defineEmits(['close'])
@@ -21,36 +23,9 @@ function toggle() {
 
         <!-- static forms side-by-side (full modal) -->
         <div class="absolute inset-0 flex">
-          <!-- Sign In form -->
-          <form class="w-1/2 h-full flex flex-col items-center justify-center p-8">
-            <h1 class="text-3xl font-bold mb-4">Sign In</h1>
-            <input type="username" placeholder="Username"
-              class="w-full mb-4 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-sky-400" />
-            <input type="password" placeholder="Password"
-              class="w-full mb-2 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-sky-400" />
-            <a href="#" class="self-end text-sm text-gray-500 hover:underline mb-6">Forgot your password?</a>
-            <button
-              class="cursor-pointer w-full py-3 bg-indigo-600 text-white font-semibold rounded-md hover:bg-indigo-800 transition-colors duration-500">
-              Sign In
-            </button>
-          </form>
+          <SignInForm class="w-1/2 h-full p-8"></SignInForm>
 
-          <!-- Sign Up form -->
-          <form class="w-1/2 h-full flex flex-col items-center justify-center p-8">
-            <h2 class="text-3xl font-bold mb-4">Create Account</h2>
-            <input type="email" placeholder="Email"
-              class="w-full mb-4 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-sky-400" />
-            <input type="text" placeholder="Username"
-              class="w-full mb-1 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-sky-400" />
-            <div class="text-xs self-end text-gray-500">Username must be over 3 characters long.</div>
-            <input type="password" placeholder="Password"
-              class="w-full mb-1 mt-3 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-sky-400" />
-            <div class="text-xs self-end text-gray-500 mb-5">Password must be over 7 characters long.</div>
-            <button
-              class="cursor-pointer w-full py-3 bg-indigo-600 text-white font-semibold rounded-md hover:bg-indigo-800 transition-colors duration-500">
-              Sign Up
-            </button>
-          </form>
+          <SignUpForm class="w-1/2 h-full p-8"></SignUpForm>
         </div>
 
         <!-- overlay panel (slides left/right over forms) -->
