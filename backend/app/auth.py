@@ -105,8 +105,8 @@ def check_email_taken():
 def check_username_taken():
     username = request.args.get("username")
 
-    if User.objects(email__iexact=username).first():
-        return jsonify({"err": "Email taken"}), 409
+    if User.objects(username__iexact=username).first():
+        return jsonify({"err": "Username taken"}), 409
 
     return jsonify({"msg": "Good username"}), 200
 
