@@ -43,10 +43,7 @@ async function signin() {
                 firstInvalid = passwordInput;
             } else {
                 localStorage.setItem('access_token', data.access_token)
-                const payload = data.access_token.split('.')[1];
-                const decoded = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
-                console.log(decoded);
-                alert('Login successful!');
+                window.location.href = '/groups/';
             }
         } catch (err) {
             console.error(err);

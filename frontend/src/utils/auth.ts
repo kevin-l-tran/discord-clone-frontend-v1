@@ -1,8 +1,8 @@
 import { BACKEND_URL } from "@/config"
 
-export async function isLoggedIn(): Promise<boolean> {
+export async function isSignedIn(): Promise<boolean> {
     try {
-        const res = await fetch(BACKEND_URL + '/authorize', {
+        const res = await fetch(BACKEND_URL + '/verify-token', {
             headers: {
                 Authorization: `Bearer ${localStorage.getItem('access_token')}`,
             },
