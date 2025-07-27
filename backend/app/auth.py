@@ -15,13 +15,11 @@ auth = Blueprint("auth", __name__)
 
 
 @auth.route("/signin", methods=["POST"])
+@require_json_fields("username", "password")
 def signin():
-    data = require_json_fields("username", "password")
-    if isinstance(data, tuple):
-        return data
-
-    username = data["username"]
-    password = data["password"]
+    data = request.json_data
+    username = data["username"].strip()
+    password = data["password"].strip()
 
     user = User.objects(username__iexact=username).first()
 
@@ -35,14 +33,12 @@ def signin():
 
 
 @auth.route("/signup", methods=["POST"])
+@require_json_fields("email", "username", "password")
 def signup():
-    data = require_json_fields("username", "email", "password")
-    if isinstance(data, tuple):
-        return data
-
-    username = data["username"]
-    email = data["email"]
-    password = data["password"]
+    data = request.json_data
+    username = data["username"].strip()
+    email = data["email"].strip()
+    password = data["password"].strip()
 
     if len(username) < 4:
         return jsonify({"err": "Username too short"}), 422
@@ -79,7 +75,7 @@ def signup():
     try:
         user.save(force_insert=True)
     except Exception as e:
-        current_app.logger.error("Failed to save User: %s", e)
+        current_app.logger.exception("Failed to save User: %s", e)
         return jsonify({"err": "Could not create user"}), 500
 
     access_token = create_access_token(identity=user)

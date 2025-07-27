@@ -1,9 +1,10 @@
 import requests
 
 from flask import Response, current_app, jsonify, request
-from typing import Any, Dict, Optional, Tuple, Union
-from google.cloud import storage
+from typing import Any, Callable, Dict, Optional, TypeVar, Union
 from werkzeug.datastructures import FileStorage
+from google.cloud import storage
+from functools import wraps
 
 
 class ApiError(Exception):
@@ -40,44 +41,51 @@ def api_get(
         resp = requests.get(url, params=params, headers=headers, timeout=timeout)
         resp.raise_for_status()
     except requests.exceptions.RequestException as e:
-        current_app.logger.error("API GET %s failed: %s", url, e)
+        current_app.logger.exception("API GET %s failed: %s", url, e)
         code = getattr(e.response, "status_code", None)
         raise ApiError(f"GET {url} failed: {e}", status_code=code)
 
     try:
         return resp.json()
     except ValueError as e:
-        current_app.logger.error("Invalid JSON from %s: %s", url, e)
+        current_app.logger.exception("Invalid JSON from %s: %s", url, e)
         raise ApiError(f"Invalid JSON in response from {url}")
 
 
-def require_json_fields(*fields: str) -> Union[Dict[str, Any], Tuple[Response, int]]:
+# Type variable for decorator
+F = TypeVar('F', bound=Callable[..., Any])
+
+def require_json_fields(*fields: str) -> Callable[[F], F]:
     """
-    Validates that the incoming JSON payload contains the specified fields.
+    Decorator that ensures specified form fields are present and non-empty in the request.
 
     Args:
-        *fields: One or more field names that must be present in the JSON payload.
+        *fields: One or more field names to validate in `request.form`.
 
     Returns:
-        The JSON payload parsed into a dictionary, if all required fields are present. 
-        Else, a Flask response tuple with a 400 status code.
-
-    Raises:
-        None: This function does not raise exceptions; it returns an error response instead.
+        A decorator that wraps a Flask view function, enforcing that all
+        specified fields are present and contain non-whitespace characters. If validation fails,
+        returns a JSON error response with a 400 status.
     """
-    data = request.get_json(silent=True) or {}
-    for field in fields:
-        if not data.get(field):
-            return jsonify(
-                {"err": f"Missing {field}"}
-            ), 400
-    return data
+    def decorator(fn: F) -> F:
+        @wraps(fn)
+        def wrapper(*args: Any, **kwargs: Any) -> Union[Response, Any]:
+            data = request.get_json(silent=True) or {}
+            for field in fields:
+                value = data.get(field, "")
+                if not isinstance(value, str) or not value.strip():
+                    return jsonify({"err": f"Missing {field}"}), 400
+            request.json_data = data
+            return fn(*args, **kwargs)
+        
+        return wrapper
+    return decorator
 
 
 def upload_to_gcs(
     file: FileStorage,
     bucket_name: str,
-    destination_blob_name: str
+    blob_name: str
 ) -> str:
     """
     Uploads a file to Google Cloud Storage and makes it publicly accessible.
@@ -88,7 +96,7 @@ def upload_to_gcs(
             `request.files`, e.g. `file = request.files['file']`.
         bucket_name:
             The name of the GCS bucket where the file will be stored.
-        destination_blob_name:
+        blob_name:
             The desired path and filename inside the bucket (e.g. "uploads/img.png").
 
     Returns:
@@ -102,7 +110,7 @@ def upload_to_gcs(
     """
     storage_client = storage.Client()
     bucket = storage_client.bucket(bucket_name)
-    blob = bucket.blob(destination_blob_name)
+    blob = bucket.blob(blob_name)
 
     blob.upload_from_file(
         file,
