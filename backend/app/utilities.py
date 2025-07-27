@@ -2,6 +2,8 @@ import requests
 
 from flask import Response, current_app, jsonify, request
 from typing import Any, Dict, Optional, Tuple, Union
+from google.cloud import storage
+from werkzeug.datastructures import FileStorage
 
 
 class ApiError(Exception):
@@ -19,13 +21,20 @@ def api_get(
     timeout: int = 5,
 ) -> Union[Dict[str, Any], list]:
     """
-    Send a GET request to `url`, raising ApiError on failure.
+    Performs an HTTP GET request to the specified URL and returns the parsed JSON response.
 
-    - `params`: query‐string parameters.
-    - `headers`: any extra headers (e.g. auth tokens); merged with default API key header.
-    - `timeout`: seconds before giving up.
+    Args:
+        url: The endpoint URL to send the GET request to.
+        params: Query parameters to include in the request.
+        headers: HTTP headers to include in the request.
+        timeout: Timeout duration in seconds for the HTTP request (default: 5).
 
-    Returns the parsed JSON body (dict or list).
+    Returns:
+        The parsed JSON response, which can be a dictionary or a list.
+
+    Raises:
+        ApiError: If the HTTP request fails (network error, non-2xx status) or if the response
+                  cannot be parsed as JSON. The exception contains the HTTP status code if available.
     """
     try:
         resp = requests.get(url, params=params, headers=headers, timeout=timeout)
@@ -44,13 +53,17 @@ def api_get(
 
 def require_json_fields(*fields: str) -> Union[Dict[str, Any], Tuple[Response, int]]:
     """
-    Validate that the incoming request JSON contains all specified keys.
+    Validates that the incoming JSON payload contains the specified fields.
 
-    - `*fields`: One or more field names that must be present in the JSON payload.
+    Args:
+        *fields: One or more field names that must be present in the JSON payload.
 
-    Returns a dict of the parsed JSON data if all required fields are present. 
-    Otherwise returns a (Response, status_code) error tuple if any field is missing, 
-    where Response is {"err": "Missing <field>"} and status_code is 400.
+    Returns:
+        The JSON payload parsed into a dictionary, if all required fields are present. 
+        Else, a Flask response tuple with a 400 status code.
+
+    Raises:
+        None: This function does not raise exceptions; it returns an error response instead.
     """
     data = request.get_json(silent=True) or {}
     for field in fields:
@@ -59,3 +72,42 @@ def require_json_fields(*fields: str) -> Union[Dict[str, Any], Tuple[Response, i
                 {"err": f"Missing {field}"}
             ), 400
     return data
+
+
+def upload_to_gcs(
+    file: FileStorage,
+    bucket_name: str,
+    destination_blob_name: str
+) -> str:
+    """
+    Uploads a file to Google Cloud Storage and makes it publicly accessible.
+
+    Args:
+        file:
+            The file object to upload. Typically this comes from Flask's
+            `request.files`, e.g. `file = request.files['file']`.
+        bucket_name:
+            The name of the GCS bucket where the file will be stored.
+        destination_blob_name:
+            The desired path and filename inside the bucket (e.g. "uploads/img.png").
+
+    Returns:
+        The publicly accessible URL of the uploaded file, e.g.
+        "https://storage.googleapis.com/{bucket_name}/{destination_blob_name}".
+
+    Raises:
+        google.cloud.exceptions.GoogleCloudError:
+            If any error occurs during interaction with GCS (authentication,
+            permissions, network issues, etc.).
+    """
+    storage_client = storage.Client()
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(destination_blob_name)
+
+    blob.upload_from_file(
+        file,
+        content_type=file.content_type
+    )
+
+    blob.make_public()
+    return blob.public_url
