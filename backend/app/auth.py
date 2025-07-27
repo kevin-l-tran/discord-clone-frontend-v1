@@ -151,12 +151,19 @@ def verify_token():
     return jsonify({"msg": "Token is valid", "user": current_user}), 200
 
 
+@jwt.user_lookup_loader
+def user_lookup_callback(_jwt_header, jwt_data):
+    identity = jwt_data["sub"]
+    return User.objects(id=ObjectId(identity)).first()
+
+
 @jwt.user_identity_loader
 def user_identity_lookup(user):
     return str(user.id)
 
 
-@jwt.user_lookup_loader
-def user_lookup_callback(_jwt_header, jwt_data):
-    identity = jwt_data["sub"]
-    return User.objects(id=ObjectId(identity)).first()
+@jwt.additional_claims_loader
+def add_claims_to_access_token(user):
+    return {
+        "username": user.username
+    }
