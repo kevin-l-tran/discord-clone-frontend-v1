@@ -158,6 +158,28 @@ def generate_signed_url(
     )
 
 
+def delete_blob(bucket_name: str, blob_name: str) -> None:
+    """
+    Delete an object (blob) from a Google Cloud Storage bucket.
+
+    Args:
+        bucket_name:
+            The name of the Cloud Storage bucket containing the blob.
+        blob_name:
+            The path/key of the blob within the bucket (e.g.
+            "groups/68861a9e0cb23ac215f2f137/avatar.jpg").
+
+    Raises:
+        google.api_core.exceptions.NotFound:
+            If the specified blob does not exist in the bucket.
+        google.api_core.exceptions.GoogleAPIError:
+            For other GCS errors (permissions, network issues, etc.).
+    """
+    bucket = storage.Client.bucket(bucket_name)
+    blob = bucket.blob(blob_name)
+    blob.delete()
+
+
 def validate_image_file(
     img_file: FileStorage, max_bytes: Optional[int] = None
 ) -> Optional[Tuple[dict, int]]:

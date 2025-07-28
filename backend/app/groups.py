@@ -3,11 +3,12 @@ import uuid
 from flask import Blueprint, current_app, jsonify, request, url_for
 from flask_jwt_extended import get_jwt_identity, jwt_required
 from mongoengine.errors import DoesNotExist, ValidationError
+from google.api_core.exceptions import NotFound
 from werkzeug.utils import secure_filename
 from bson import ObjectId
 
 from .models import Group, GroupMembership, RoleType
-from .utilities import upload_to_gcs, validate_image_file
+from .utilities import delete_blob, upload_to_gcs, validate_image_file
 
 groups = Blueprint("groups", __name__)
 
@@ -89,7 +90,7 @@ def create_group():
     except Exception as e:
         current_app.logger.exception("Failed to upload group image: %s", e)
         return jsonify({"err": "Image upload failed"}), 500
-    
+
     group.img_path = unique
 
     # add creator as owner of group
@@ -138,10 +139,10 @@ def update_group(group_id):
     try:
         membership = GroupMembership.objects.get(user=get_jwt_identity(), group=group)
     except DoesNotExist:
-        return jsonify({"err": "Not authorized"}), 401
+        return jsonify({"err": "Forbidden"}), 403
 
     if membership.role != RoleType.OWNER:
-        return jsonify({"err": "Not authorized"}), 401
+        return jsonify({"err": "Forbidden"}), 403
 
     name = request.form.get("name", "").strip()
     if name:
@@ -187,3 +188,41 @@ def update_group(group_id):
             "created_at": group.created_at.isoformat(),
         }
     ), 200
+
+
+@groups.route("/group/<group_id>", methods=["DELETE"])
+@jwt_required()
+def delete_group(group_id):
+    try:
+        group = Group.objects.get(id=group_id)
+    except DoesNotExist:
+        return jsonify({"err": "Group not found"}), 404
+    except ValidationError:
+        return jsonify({"err": "Invalid group id"}), 400
+
+    try:
+        membership = GroupMembership.objects.get(user=get_jwt_identity(), group=group)
+    except DoesNotExist:
+        return jsonify({"err": "Forbidden"}), 403
+
+    if membership.role != RoleType.OWNER:
+        return jsonify({"err": "Forbidden"}), 403
+
+    try:
+        group.delete()
+    except Exception:
+        current_app.logger.exception("Failed to delete group")
+        return jsonify(err="Could not delete group"), 500
+
+    try:
+        delete_blob(
+            bucket_name=current_app.config["GCS_BUCKET_NAME"],
+            blob_name=group.img_path,
+        )
+        return "", 204
+    except NotFound:
+        current_app.logger.warning("Group image not found")
+        return "", 204
+    except Exception:
+        current_app.logger.warning("Failed to delete image")
+        return "", 204
