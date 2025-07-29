@@ -2,7 +2,6 @@
 import { ref, computed, watch } from 'vue';
 import GroupCard from './GroupCard.vue';
 import defaultImageUrl from '@/assets/background.avif';
-import { preview } from 'vite';
 import { BACKEND_URL } from '@/config';
 
 const MAX_DESC = 150;
