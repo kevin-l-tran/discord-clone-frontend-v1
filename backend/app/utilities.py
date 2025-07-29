@@ -1,14 +1,18 @@
 import requests
 import datetime
 
+from typing import Any, Callable, Dict, Iterable, Optional, Set, Tuple, TypeVar, Union
+from flask_jwt_extended import get_jwt_identity, verify_jwt_in_request
+from mongoengine.errors import DoesNotExist, ValidationError
 from flask import Response, current_app, jsonify, request
-from typing import Any, Callable, Dict, Optional, Tuple, TypeVar, Union
 from werkzeug.datastructures import FileStorage
 from google.oauth2 import service_account
 from google.cloud import storage
 from datetime import timedelta
 from functools import wraps
 from PIL import Image
+
+from .models import Group, GroupMembership, RoleType
 
 
 class ApiError(Exception):
@@ -151,7 +155,7 @@ def generate_signed_url(
     """
     key_path = current_app.config.get("G_SECRETS_FILE")
     creds = service_account.Credentials.from_service_account_file(key_path)
-    storage_client = storage.Client(credentials=creds, project=creds.project_id) 
+    storage_client = storage.Client(credentials=creds, project=creds.project_id)
     bucket = storage_client.bucket(bucket_name)
     blob = bucket.blob(blob_name)
     return blob.generate_signed_url(
@@ -198,8 +202,8 @@ def validate_image_file(
       3. Full structure check via Pillow's `Image.verify()`.
 
     Args:
-        img_file (FileStorage): The uploaded file from `request.files`.
-        max_bytes (int): Maximum allowed size in bytes (default 5 MB).
+        img_file: The uploaded file from `request.files`.
+        max_bytes: Maximum allowed size in bytes (default 5 MB).
 
     Returns:
         None if all checks pass, or a tuple `(payload, status_code)` where
@@ -231,3 +235,68 @@ def validate_image_file(
         return {"err": "Corrupted or unsupported image"}, 400
 
     return None
+
+
+def require_group_membership(
+    roles: Optional[Iterable[RoleType]] = None,
+    group_arg: str = "group_id",
+):
+    """
+    Ensure that the JWT-authenticated user is a member of a given Group,
+    and optionally has one of the specified roles, before allowing access
+    to a Flask view.
+
+    Args:
+        roles:
+            If provided, restricts access to only those users whose membership
+            role is in this set. Must be an iterable of RoleType.
+            If None, any member (regardless of role) is allowed.
+        group_arg:
+            The name of the keyword argument in the view function that provides
+            the Group's ID. This ID will be used to look up the Group and the
+            current user's membership.
+
+    Returns:
+        Out: The decorated Flask view's normal return value, or one of:
+        - `(json, 500)` if `group_arg` missing
+        - `(json, 404)` if group ID is invalid or not found
+        - `(json, 403)` if the user has no membership or insufficient role
+    """
+    # validate the roles argument at decorate-time
+    if roles is not None and not isinstance(roles, (list, tuple, set)):
+        raise ValueError(
+            "require_group_membership: 'roles' must be a list/tuple/set of RoleType"
+        )
+    # safely normalize into a set (or leave None)
+    allowed_roles: Optional[Set[RoleType]] = set(roles) if roles is not None else None
+
+    def decorator(fn):
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+            verify_jwt_in_request()
+            user_id = get_jwt_identity()
+
+            if group_arg not in kwargs:
+                return jsonify(
+                    {"err": f"Decorator expected '{group_arg}' in kwargs"}
+                ), 500
+            group_id = kwargs[group_arg]
+
+            try:
+                group = Group.objects.get(id=group_id)
+            except (DoesNotExist, ValidationError):
+                return jsonify({"err": "Group not found"}), 404
+
+            try:
+                membership = GroupMembership.objects.get(user=user_id, group=group)
+            except (DoesNotExist, ValidationError):
+                return jsonify({"err": "Forbidden"}), 403
+
+            if allowed_roles is not None and membership.role not in allowed_roles:
+                return jsonify({"err": "Forbidden"}), 403
+
+            return fn(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
