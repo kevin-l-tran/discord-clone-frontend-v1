@@ -8,7 +8,7 @@ from werkzeug.utils import secure_filename
 from bson import ObjectId
 
 from .models import Group, GroupMembership, RoleType
-from .utilities import delete_blob, generate_signed_url, upload_to_gcs, validate_image_file
+from .utilities import delete_blob, generate_signed_url, require_group_membership, upload_to_gcs, validate_image_file
 
 groups = Blueprint("groups", __name__)
 
@@ -40,6 +40,8 @@ def get_groups():
 
 
 @groups.route("/group/<group_id>", methods=["GET"])
+@jwt_required()
+@require_group_membership(group_arg="group_id")
 def get_group(group_id):
     try:
         group = Group.objects.get(id=group_id)
@@ -152,6 +154,7 @@ def create_group():
 
 @groups.route("/group/<group_id>", methods=["PATCH"])
 @jwt_required()
+@require_group_membership(roles=[RoleType.OWNER], group_arg="group_id")
 def update_group(group_id):
     try:
         group = Group.objects.get(id=group_id)
@@ -159,14 +162,6 @@ def update_group(group_id):
         return jsonify({"err": "Group not found"}), 404
     except ValidationError:
         return jsonify({"err": "Invalid group id"}), 400
-
-    try:
-        membership = GroupMembership.objects.get(user=get_jwt_identity(), group=group)
-    except DoesNotExist:
-        return jsonify({"err": "Forbidden"}), 403
-
-    if membership.role != RoleType.OWNER:
-        return jsonify({"err": "Forbidden"}), 403
 
     name = request.form.get("name", "").strip()
     if name:
@@ -225,6 +220,7 @@ def update_group(group_id):
 
 @groups.route("/group/<group_id>", methods=["DELETE"])
 @jwt_required()
+@require_group_membership(roles=[RoleType.OWNER], group_arg="group_id")
 def delete_group(group_id):
     try:
         group = Group.objects.get(id=group_id)
@@ -232,14 +228,6 @@ def delete_group(group_id):
         return jsonify({"err": "Group not found"}), 404
     except ValidationError:
         return jsonify({"err": "Invalid group id"}), 400
-
-    try:
-        membership = GroupMembership.objects.get(user=get_jwt_identity(), group=group)
-    except DoesNotExist:
-        return jsonify({"err": "Forbidden"}), 403
-
-    if membership.role != RoleType.OWNER:
-        return jsonify({"err": "Forbidden"}), 403
 
     try:
         group.delete()
