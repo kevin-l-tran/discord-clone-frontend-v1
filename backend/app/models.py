@@ -113,6 +113,16 @@ class Channel(Document):
 
     meta = {"indexes": [{"fields": ["group", "name"], "unique": True}]}
 
+    def to_dict(self):
+        return {
+            "id": str(self.id),
+            "group": str(self.group.id),
+            "name": self.name,
+            "type": self.type.value,
+            "topic": self.topic,
+            "position": self.position,
+        }
+
 
 # END ###########################################################################
 
