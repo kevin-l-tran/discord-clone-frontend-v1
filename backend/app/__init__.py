@@ -22,7 +22,7 @@ def create_app(config_object="config.DevelopmentConfig"):
     app = Flask(__name__)
     app.config.from_object(config_object)
 
-    CORS(app, resources={r"/*": {"origins": "*"}})
+    CORS(app)
 
     with app.app_context():
         # CORS(app, origins=[current_app.config['FRONTEND_URL']]); use when frontend is deployed
