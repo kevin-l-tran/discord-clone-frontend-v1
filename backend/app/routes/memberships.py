@@ -253,3 +253,29 @@ def delete_member(group_id, member_id):
     except Exception as e:
         current_app.logger.exception("Failed to delete Membership: %s", e)
         return jsonify({"err": "Could not delete Membership"}), 500
+
+
+@memberships.route("/group/<group_id>/members/", methods=["DELETE"])
+@jwt_required()
+@require_group_membership(roles=[RoleType.OWNER], group_arg="group_id")
+def delete_self_member(group_id):
+    try:
+        group = Group.objects.get(id=group_id)
+    except DoesNotExist:
+        return jsonify({"err": "Group not found"}), 404
+    except ValidationError:
+        return jsonify({"err": "Invalid group ID"}), 400
+
+    try:
+        member = GroupMembership.objects.get(id=get_jwt_identity(), group=group)
+    except DoesNotExist:
+        return jsonify({"err": "Membership not found"}), 404
+    except ValidationError:
+        return jsonify({"err": "Invalid membership ID"}), 400
+
+    try:
+        member.delete()
+        return "", 204
+    except Exception as e:
+        current_app.logger.exception("Failed to delete Membership: %s", e)
+        return jsonify({"err": "Could not delete Membership"}), 500
