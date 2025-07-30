@@ -12,7 +12,7 @@ from ..services.message_handler import create_broadcast_message
 messages = Blueprint("messages", __name__)
 
 
-@messages.route("/groups/<group_id>/channels/<channel_id>/messages", methods=["GET"])
+@messages.route("/group/<group_id>/channels/<channel_id>/messages", methods=["GET"])
 @jwt_required()
 @require_group_membership(group_arg="group_id")
 def get_messages(group_id, channel_id):
@@ -63,7 +63,7 @@ def get_messages(group_id, channel_id):
 
 
 @messages.route(
-    "/groups/<group_id>/channels/<channel_id>/messages/<message_id>", methods=["GET"]
+    "/group/<group_id>/channels/<channel_id>/messages/<message_id>", methods=["GET"]
 )
 @jwt_required()
 @require_group_membership(group_arg="group_id")
@@ -87,7 +87,7 @@ def get_message(group_id, channel_id, message_id):
     return jsonify(message.to_dict()), 200
 
 
-@messages.route("/groups/<group_id>/channels/<channel_id>/messages", methods=["POST"])
+@messages.route("/group/<group_id>/channels/<channel_id>/messages", methods=["POST"])
 @jwt_required()
 @require_group_membership(group_arg="group_id")
 def create_message(group_id, channel_id):
