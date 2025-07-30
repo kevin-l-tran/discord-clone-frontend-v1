@@ -2,11 +2,35 @@
 import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue';
 import { useRoute } from 'vue-router';
 import { io } from 'socket.io-client';
-import { BACKEND_URL } from '../../config';
+import { BACKEND_URL, GEMINI_API_KEY } from '../../config';
+import { GoogleGenAI } from "@google/genai";
 
 // Props
 const props = defineProps<{ channel: { id: string; name: string } }>();
 const channel = props.channel;
+const ai = new GoogleGenAI({apiKey: GEMINI_API_KEY});
+const ai_tools = [
+    {
+        googleSearch: {},
+    },
+];
+const ai_config = {
+    thinkingConfig: {
+        thinkingBudget: -1,
+    },
+    ai_tools,
+    responseMimeType: 'text/plain',
+};
+const chat = ai.chats.create({
+  model: 'gemini-2.5-flash',
+  history: [
+    {
+      role: "model",
+      parts: [{text: "Great to meet you. What would you like to know?"}]
+    }
+  ],
+  config: ai_config
+})
 
 // State
 const messages = ref<any[]>([]);
@@ -66,6 +90,39 @@ async function sendMessage() {
   );
 
   newText.value = '';
+}
+
+async function askGemini() {
+  if (!newText.value.trim()) return;
+  const form = new FormData();
+  form.append('content', newText.value.trim());
+
+  await fetch(
+    `${BACKEND_URL}/group/${groupId.value}/channels/${channel.id}/messages`,
+    {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: form,
+    }
+  );
+
+  const msg = newText.value.trim();
+  newText.value = '';
+
+  try {
+    const response = await chat.sendMessageStream({
+      message: msg
+    });
+
+    let reply = '';
+    for await (const chunk of response) {
+      reply += chunk.text;
+    }
+
+    console.log(`Gemini reply: ${reply}`);
+  } catch (error) {
+    console.error('Error with Gemini:', error)
+  }
 }
 
 // React to channel switch
@@ -157,7 +214,7 @@ function scrollToBottom() {
 
   <!-- Message Input -->
   <footer class="p-4 bg-white border-t border-gray-200">
-    <form @submit.prevent="sendMessage" class="flex items-center bg-gray-100 rounded-xl px-4 py-2 w-full">
+    <form @submit.prevent="askGemini" class="flex items-center bg-gray-100 rounded-xl px-4 py-2 w-full">
       <input v-model="newText" class="flex-1 bg-transparent outline-none text-gray-900 placeholder-gray-500"
         :placeholder="`Message #${channel.name}`" />
       <button type="submit"
