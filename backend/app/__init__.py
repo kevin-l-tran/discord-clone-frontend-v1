@@ -1,17 +1,19 @@
 import certifi
+import google.generativeai as genai
 
-from flask import Flask, current_app
+from flask import Flask, current_app, jsonify
 from flask_cors import CORS
 from mongoengine import connect, disconnect, get_connection
 from pymongo.errors import ServerSelectionTimeoutError, ConfigurationError
-import google.generativeai as genai
+from werkzeug.exceptions import RequestEntityTooLarge
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import JWTManager
+from flask_socketio import SocketIO
 from dotenv import load_dotenv
 
 flask_bcrypt = Bcrypt()
 jwt = JWTManager()
-gcreds = None
+socketio = SocketIO(cors_allowed_origins="*") # later replace with FRONTEND_URL
 
 load_dotenv()
 
@@ -62,5 +64,10 @@ def create_app(config_object="config.DevelopmentConfig"):
 
     flask_bcrypt.init_app(app)
     jwt.init_app(app)
+    socketio.init_app(app)
+
+    @app.errorhandler(RequestEntityTooLarge)
+    def handle_file_too_large(e):
+        return jsonify({"err": "Payload too large"}), 413
 
     return app

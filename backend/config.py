@@ -23,6 +23,7 @@ class BaseConfig:
     NINJA_API_KEY            = os.getenv("NINJA_API_KEY")
 
     MAX_UPLOAD_BYTES         = int(os.getenv("MAX_UPLOAD_BYTES"))
+    MAX_CONTENT_LENGTH       = int(os.getenv("MAX_UPLOAD_BYTES"))
 
 class DevelopmentConfig(BaseConfig):
     DEBUG = True

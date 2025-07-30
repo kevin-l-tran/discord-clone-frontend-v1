@@ -143,7 +143,7 @@ class Message(TimestampedDocument):
     channel = ReferenceField(Channel, required=True, reverse_delete_rule=CASCADE)
     author = ReferenceField(User, required=True, reverse_delete_rule=CASCADE)
     content = StringField()
-    attachments = ListField(URLField())
+    attachments = ListField(StringField())
     edited_at = DateTimeField()
     deleted_at = DateTimeField()
     is_deleted = BooleanField(default=False)
@@ -158,8 +158,25 @@ class Message(TimestampedDocument):
             },
             "-created_at",
             "channel",
+            "is_deleted",
         ],
     }
+
+    def to_dict(self):
+        base = {
+            "id": str(self.id),
+            "channel": str(self.channel.id),
+            "author": self.author.id,
+            "content": self.content,
+            "attachments": self.attachments,
+            "edited_at": self.edited_at.date().isoformat() if self.edited_at else None,
+            "deleted_at": self.deleted_at.date().isoformat() if self.deleted_at else None,
+            "is_deleted": self.is_deleted,
+            "reply_to": str(self.reply_to.id) if self.reply_to else None,
+        }
+        if self.is_deleted:
+            base.update(content="This message was deleted.", attachments=[])
+        return base
 
 
 # END ###########################################################################
