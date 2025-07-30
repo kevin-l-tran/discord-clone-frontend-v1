@@ -115,7 +115,7 @@ def create_message(group_id, channel_id):
         current_app.logger.exception("Unexpected error in create_broadcast_message")
         return jsonify({"err": "Internal server error"}), 500
 
-    return jsonify(msg.to_json()), 201
+    return jsonify(msg.to_dict()), 201
 
 
 @messages.route("/group/<group_id>/channels/<channel_id>/messages/gemini", methods=["POST"])
@@ -145,9 +145,10 @@ def create_gemini_message(group_id, channel_id):
             author=gemini,
             content=content,
             reply_to=reply_to,
+            file_streams=[]
         )
     except Exception as e:
         current_app.logger.exception("Unexpected error in create_broadcast_message: %s", e)
         return jsonify({"err": "Internal server error:"}), 500
 
-    return jsonify(msg.to_json()), 201
+    return jsonify(msg.to_dict()), 201
