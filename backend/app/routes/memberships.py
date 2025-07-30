@@ -267,7 +267,7 @@ def delete_self_member(group_id):
         return jsonify({"err": "Invalid group ID"}), 400
 
     try:
-        member = GroupMembership.objects.get(id=get_jwt_identity(), group=group)
+        member = GroupMembership.objects.get(user=get_jwt_identity(), group=group)
     except DoesNotExist:
         return jsonify({"err": "Membership not found"}), 404
     except ValidationError:
