@@ -75,7 +75,7 @@ function groupView() {
         </aside>
         <!-- Chat Section -->
         <main class="flex-1 flex flex-col">
-            <MessageChannel :channel="selectedChannel" :key="selectedChannel.id"></MessageChannel>
+            <MessageChannel :channel="selectedChannel" :key="selectedChannel.id" :members="members"></MessageChannel>
         </main>
         <!-- Members List (Right) -->
         <aside class="w-64 bg-white border-l border-gray-200 flex flex-col" aria-label="member list">

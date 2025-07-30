@@ -13,7 +13,7 @@ defineProps({
             <img :src="member.avatar" alt="avatar"
                 class="w-10 h-10 rounded-full border border-gray-200 bg-gray-100 mr-3" />
             <div>
-                <div class="font-medium text-gray-900">{{ member.username }}</div>
+                <div class="font-bold text-blue-500">{{ member.username }}</div>
             </div>
         </div>
     </div>
