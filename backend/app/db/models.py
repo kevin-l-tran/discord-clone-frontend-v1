@@ -78,7 +78,7 @@ class RoleType(Enum):
 
 
 class GroupMembership(TimestampedDocument):
-    user = LazyReferenceField(User, required=True, reverse_delete_rule=CASCADE)
+    user = ReferenceField(User, required=True, reverse_delete_rule=CASCADE)
     group = LazyReferenceField(Group, required=True, reverse_delete_rule=CASCADE)
     nickname = StringField()
     role = EnumField(RoleType, default=RoleType.MEMBER)
