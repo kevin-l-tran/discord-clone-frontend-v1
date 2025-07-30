@@ -172,7 +172,7 @@ class Message(TimestampedDocument):
         base = {
             "id": str(self.id),
             "channel": str(self.channel.id),
-            "author": self.author.id,
+            "author": str(self.author.id),
             "content": self.content,
             "attachments": self.attachments,
             "edited_at": self.edited_at.date().isoformat() if self.edited_at else None,
