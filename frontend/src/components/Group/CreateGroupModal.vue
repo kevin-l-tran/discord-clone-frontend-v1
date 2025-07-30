@@ -81,7 +81,7 @@ async function submitForm() {
         const data = await res.json();
 
         if (res.ok) {
-            window.location.href = `/groups/${data.id}`;
+            window.location.href = `/groups/#/${data.id}`;
         } else {
             alert('Failed to create group: ' + (data.err || res.statusText));
         }

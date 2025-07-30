@@ -23,7 +23,9 @@ async function submitForm() {
             console.error("Join failed:", err);
             alert("Failed to join group: " + err.err);
         } else {
-        console.log("Joined successfully!");
+            const data = await res.json();
+            console.log("Joined successfully!");
+            window.location.href = `/groups/#/${data.id}`;
         }
     } catch(err) {
         console.error(err);
