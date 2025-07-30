@@ -1,73 +1,45 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
 import ChannelsList from './components/Chat/ChannelsList.vue';
 import MembersList from './components/Chat/MembersList.vue';
 import MessageChannel from './components/Chat/MessageChannel.vue';
+import { BACKEND_URL } from './config';
 
 const route = useRoute();
-const groupId = ref(route.params.group_id)
 
-const channels = [
-  { id: 1, name: 'general' },
-  { id: 2, name: 'random' },
-];
+const channels = ref([]);
+const members = ref([])
+const selectedChannel = ref();
+const groupId = computed(() => String(route.params.group_id || ''));
 
-const selectedChannel = ref(1);
-
-const messages = ref([
-  {
-    id: 1,
-    channel: 1,
-    user: 'User1',
-    avatar: 'https://ui-avatars.com/api/?name=U1&background=dedede&color=888',
-    time: '10:30 AM',
-    content: 'Hello there! 👋',
+const token = localStorage.getItem('access_token') || '';
+watch(
+  groupId,
+  async (id) => {
+    if (!id) return;          // skip until we have a real id
+    try {
+      const [resCh, resMem] = await Promise.all([
+        fetch(`${BACKEND_URL}/group/${encodeURIComponent(id)}/channels`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch(`${BACKEND_URL}/group/${encodeURIComponent(id)}/members`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
+      if (!resCh.ok || !resMem.ok) {
+        throw new Error(`Fetch failed: ${resCh.status}, ${resMem.status}`);
+      }
+      channels.value = await resCh.json();
+      members.value  = await resMem.json();
+    } catch (e) {
+      console.error('Error loading group data', e);
+      alert('Could not load channels/members');
+    }
   },
-  {
-    id: 2,
-    channel: 1,
-    user: 'User2',
-    avatar: 'https://ui-avatars.com/api/?name=U2&background=dedede&color=888',
-    time: '10:32 AM',
-    content: "Hey! What's up?",
-  },
-  {
-    id: 3,
-    channel: 2,
-    user: 'User1',
-    avatar: 'https://ui-avatars.com/api/?name=U1&background=dedede&color=888',
-    time: '11:00 AM',
-    content: 'Random things!',
-  },
-]);
-
-const filteredMessages = computed(() =>
-  messages.value.filter(msg => msg.channel === selectedChannel.value)
+  { immediate: true }
 );
-
-// Example members list
-const members = [
-  {
-    id: 1,
-    name: 'User1',
-    avatar: 'https://ui-avatars.com/api/?name=U1&background=dedede&color=888',
-    status: 'online',
-  },
-  {
-    id: 2,
-    name: 'User2',
-    avatar: 'https://ui-avatars.com/api/?name=U2&background=dedede&color=888',
-    status: 'offline',
-  },
-  {
-    id: 3,
-    name: 'You',
-    avatar: 'https://ui-avatars.com/api/?name=You&background=dedede&color=888',
-    status: 'online',
-  },
-];
 </script>
 
 <template>
@@ -81,7 +53,6 @@ const members = [
     </aside>
     <!-- Chat Section -->
     <main class="flex-1 flex flex-col">
-      <MessageChannel :channel="channels.find(c => c.id === selectedChannel)" :messages="filteredMessages"></MessageChannel>
     </main>
     <!-- Members List (Right) -->
     <aside class="w-64 bg-white border-l border-gray-200 flex flex-col" aria-label="member list">
