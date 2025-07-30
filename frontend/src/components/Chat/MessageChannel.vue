@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue';
 import { useRoute } from 'vue-router';
 import { io } from 'socket.io-client';
 import { BACKEND_URL } from '../../config';
@@ -12,6 +12,7 @@ const channel = props.channel;
 const messages = ref<any[]>([]);
 const newText = ref('');
 const nextCursor = ref<string | null>(null);
+const messageContainer = ref<HTMLElement | null>(null);
 
 // Routing & auth
 const route = useRoute();
@@ -84,6 +85,15 @@ watch(
   }
 );
 
+// Scroll to bottom whenever messages change
+watch(
+  messages,
+  () => {
+    scrollToBottom();
+  },
+  { flush: 'post' }
+);
+
 // Setup WebSocket and initial load
 onMounted(() => {
   socket = io(BACKEND_URL, { auth: { token } });
@@ -98,10 +108,13 @@ onMounted(() => {
     // Ensure message is for current channel
     if (payload.channel === channel.id || payload.channel_id === channel.id) {
       messages.value.push(payload);
+      scrollToBottom();
     }
   });
 
-  loadMessages();
+  loadMessages().then(() => {
+    scrollToBottom();
+  });
 });
 
 // Cleanup
@@ -110,6 +123,14 @@ onBeforeUnmount(() => {
     socket.disconnect();
   }
 });
+
+function scrollToBottom() {
+  nextTick(() => {
+    if (messageContainer.value) {
+      messageContainer.value.scrollTop = messageContainer.value.scrollHeight;
+    }
+  });
+}
 </script>
 
 <template>
@@ -119,16 +140,9 @@ onBeforeUnmount(() => {
   </header>
 
   <!-- Chat Messages -->
-  <section
-    class="flex-1 overflow-y-auto px-6 py-4 bg-gray-50"
-    @scroll.passive="onScroll"
-  >
+  <section class="flex-1 overflow-y-auto px-6 py-4 bg-gray-50" ref="messageContainer" @scroll.passive="onScroll">
     <div v-for="msg in messages" :key="msg.id" class="flex items-start mb-6">
-      <img
-        :src="msg.avatar"
-        alt="avatar"
-        class="w-10 h-10 rounded-full mr-4 border border-gray-200 bg-gray-200"
-      />
+      <img :src="msg.avatar" alt="avatar" class="w-10 h-10 rounded-full mr-4 border border-gray-200 bg-gray-200" />
       <div>
         <div class="flex items-center mb-1">
           <span class="font-semibold text-gray-900 mr-2">{{ msg.user }}</span>
@@ -144,15 +158,10 @@ onBeforeUnmount(() => {
   <!-- Message Input -->
   <footer class="p-4 bg-white border-t border-gray-200">
     <form @submit.prevent="sendMessage" class="flex items-center bg-gray-100 rounded-xl px-4 py-2 w-full">
-      <input
-        v-model="newText"
-        class="flex-1 bg-transparent outline-none text-gray-900 placeholder-gray-500"
-        :placeholder="`Message #${channel.name}`"
-      />
-      <button
-        type="submit"
-        class="ml-3 px-3 py-1 rounded-lg bg-indigo-600 text-white font-semibold transition hover:bg-indigo-700"
-      >
+      <input v-model="newText" class="flex-1 bg-transparent outline-none text-gray-900 placeholder-gray-500"
+        :placeholder="`Message #${channel.name}`" />
+      <button type="submit"
+        class="ml-3 px-3 py-1 rounded-lg bg-indigo-600 text-white font-semibold transition hover:bg-indigo-700">
         Send
       </button>
     </form>
