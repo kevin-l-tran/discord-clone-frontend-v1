@@ -205,7 +205,7 @@ function scrollToBottom() {
     });
 }
 
-function appendUsername(message) {
+function appendUsername(message: any) {
     props.members.forEach((member) => {
         if (message.author === member.id) {
             message.username = member.username;
