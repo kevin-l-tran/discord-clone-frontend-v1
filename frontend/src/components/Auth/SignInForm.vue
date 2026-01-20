@@ -11,6 +11,8 @@ const passwordWarn = ref('');
 const usernameInput = ref(null);
 const passwordInput = ref(null);
 
+const isSubmitting = ref(false);
+
 async function signin() {
     const payload = { username: username.value, password: password.value };
 
@@ -30,6 +32,7 @@ async function signin() {
 
     if (!firstInvalid) {
         try {
+            isSubmitting.value = true;
             const res = await fetch(BACKEND_URL + '/signin', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -49,19 +52,20 @@ async function signin() {
             console.error(err);
             alert('An unexpected network error occurred. Please try again later.');
             return;
+        } finally {
+            isSubmitting.value = false;
         }
     }
 
     if (firstInvalid && firstInvalid.value) {
         await nextTick();
         (firstInvalid.value as HTMLInputElement).focus();
-        return;
     }
 }
 </script>
 
 <template>
-    <form class="flex flex-col items-center justify-center" @submit.prevent="signin">
+    <form class="flex flex-col items-center justify-center" @submit.prevent="signin" :class="{ 'cursor-wait': isSubmitting }">
         <h1 class="text-3xl font-bold mb-4">Sign In</h1>
         <input type="username" placeholder="Username" id="username" v-model="username" ref="usernameInput"
             class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-sky-400"
@@ -74,7 +78,7 @@ async function signin() {
         <a href="#" class="self-end text-sm text-gray-500 hover:underline mb-6">Forgot your password?</a>
         <button
             class="cursor-pointer w-full py-3 bg-indigo-600 text-white font-semibold rounded-md hover:bg-indigo-800 transition-colors duration-500">
-            Sign In
+            {{ isSubmitting ? 'Signing in...' : 'Sign In' }}
         </button>
     </form>
 </template>

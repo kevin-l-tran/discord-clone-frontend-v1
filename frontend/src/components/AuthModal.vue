@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import SignInForm from './Auth/SignInForm.vue'
 import SignUpForm from './Auth/SignUpForm.vue'
-import { ref, defineEmits } from 'vue'
+import { ref } from 'vue'
 
 const emit = defineEmits(['close'])
 

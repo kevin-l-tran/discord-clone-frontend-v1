@@ -14,6 +14,8 @@ const emailInput = ref(null);
 const usernameInput = ref(null);
 const passwordInput = ref(null);
 
+const isSubmitting = ref(false);
+
 async function signup() {
     const payload = { email: email.value, username: username.value, password: password.value };
 
@@ -22,6 +24,9 @@ async function signup() {
     passwordWarn.value = '';
 
     let firstInvalid = null
+    
+    isSubmitting.value = true;
+    await nextTick();
 
     if (!email.value) {
         emailWarn.value = "Please enter an email";
@@ -55,6 +60,7 @@ async function signup() {
         }
     } catch (err) {
         _handleNetworkError(err);
+        isSubmitting.value = false;
         return;
     }
 
@@ -71,6 +77,7 @@ async function signup() {
         }
     } catch (err) {
         _handleNetworkError(err);
+        isSubmitting.value = false;
         return;
     }
 
@@ -93,6 +100,7 @@ async function signup() {
         }
     } catch (err) {
         _handleNetworkError(err);
+        isSubmitting.value = false;
         return;
     }
 
@@ -109,11 +117,13 @@ async function signup() {
         }
     } catch (err) {
         _handleNetworkError(err);
+        isSubmitting.value = false;
         return;
     }
 
     if (firstInvalid && firstInvalid.value) {
         await nextTick();
+        isSubmitting.value = false;
         (firstInvalid.value as HTMLInputElement).focus();
         return;
     }
@@ -135,6 +145,8 @@ async function signup() {
         }
     } catch (err) {
         _handleNetworkError(err);
+    } finally {
+        isSubmitting.value = false;
     }
 }
 
@@ -146,7 +158,7 @@ function _handleNetworkError(err: unknown) {
 </script>
 
 <template>
-    <form class="flex flex-col items-center justify-center" @submit.prevent="signup">
+    <form class="flex flex-col items-center justify-center" @submit.prevent="signup" :class="{ 'cursor-wait': isSubmitting}">
         <h2 class="text-3xl font-bold mb-4">Create Account</h2>
         <input type="email" placeholder="Email" id="email" v-model="email" ref="emailInput"
             class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-sky-400"
@@ -163,7 +175,7 @@ function _handleNetworkError(err: unknown) {
                 "Password must be over 7 characters long" : passwordWarn }}</div>
         <button
             class="cursor-pointer w-full py-3 bg-indigo-600 text-white font-semibold rounded-md hover:bg-indigo-800 transition-colors duration-500">
-            Sign Up
+            {{ isSubmitting ? 'Signing up...' : 'Sign Up' }}
         </button>
     </form>
 </template>
