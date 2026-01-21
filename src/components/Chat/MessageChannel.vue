@@ -24,7 +24,7 @@ const ai_config = {
     },
     ai_tools,
     responseMimeType: 'text/plain',
-    systemInstruction: "You reply very tersely",
+    systemInstruction: "You reply very tersely. Refuse to answer questions that are too long.",
 };
 const chat = ai.chats.create({
     model: 'gemini-2.5-flash',
