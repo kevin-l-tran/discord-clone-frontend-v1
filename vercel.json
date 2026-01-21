@@ -5,7 +5,7 @@
       "headers": [
         {
           "key": "Access-Control-Allow-Origin",
-          "value": "https://discord-clone-backend-theta.vercel.app/"
+          "value": "https://discord-clone-backend-theta.vercel.app"
         },
         {
           "key": "Access-Control-Allow-Methods",
