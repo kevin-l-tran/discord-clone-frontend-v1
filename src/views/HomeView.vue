@@ -15,10 +15,9 @@ const showAuth = ref(false);
 
     <!-- title / subtitle -->
     <div class="border-t-1 border-b-1 py-8">
-      <h1 class="text-6xl font-bold tracking-widest">DIMENSION</h1>
+      <h1 class="text-6xl font-bold tracking-widest">CONCORD</h1>
       <p class="mt-4 max-w-2xl leading-relaxed text-lg">
-        A fully responsive site template designed by HTML5 UP and
-        released for free under the Creative Commons license.
+        A decluttered chat experience focused on what matters most.
       </p>
     </div>
 
